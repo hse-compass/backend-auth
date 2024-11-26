@@ -97,7 +97,8 @@ API для регистрации и авторизации пользовате
 - PostgreSQL
 
 ## Запрос для создания базы данных в PostgreSQL
-    CREATE TABLE users (
+```sql
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(), 
     email VARCHAR(255) NOT NULL,                  
     password_hash VARCHAR(255) NOT NULL,          
@@ -110,3 +111,4 @@ API для регистрации и авторизации пользовате
     reset_password_token TEXT,                    
     reset_password_exp TIMESTAMP                  
 );
+```
