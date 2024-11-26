@@ -95,3 +95,18 @@ API для регистрации и авторизации пользовате
 - Passlib
 - Python-Jose
 - PostgreSQL
+
+## Запрос для создания базы данных в PostgreSQL
+    CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), 
+    email VARCHAR(255) NOT NULL,                  
+    password_hash VARCHAR(255) NOT NULL,          
+    roles JSON NOT NULL DEFAULT '{"role": "user"}', 
+    created_at TIMESTAMP DEFAULT NOW() NOT NULL,  
+    updated_at TIMESTAMP DEFAULT NOW(),           
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,      
+    last_login TIMESTAMP,                         
+    refresh_token TEXT,                           
+    reset_password_token TEXT,                    
+    reset_password_exp TIMESTAMP                  
+);
