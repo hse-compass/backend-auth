@@ -7,15 +7,21 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 from uuid import uuid4
+import os
 from dotenv import load_dotenv
+import requests
 import logging
 
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
 
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-DATABASE_URL = "postgresql://sarvar@localhost:5432/credentials"
+SECRET_KEY = os.getenv("SECRET_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
+DIRECTUS_API_URL = os.getenv("DIRECTUS_API_URL")
+DIRECTUS_ADMIN_TOKEN = os.getenv("DIRECTUS_ADMIN_TOKEN")
 
 Base = declarative_base()
 engine = create_engine(DATABASE_URL)
@@ -33,6 +39,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime, default=None)
+    id_directus = Column(String, unique=True, nullable=False)  
 
 Base.metadata.create_all(bind=engine)
 
@@ -65,34 +72,6 @@ async def server_error_handler(request: Request, exc: Exception):
         content={"status": "error", "message": "Внутренняя ошибка сервера."},
     )
 
-@app.post("/directus/users/register", status_code=201)
-def register_directus_user(email: str, password: str, db: Session = Depends(get_db)):
-    try:
-        if not email or not password:
-            raise HTTPException(status_code=400, detail="Неверный формат email или пароля.")
-        
-        existing_user = db.query(User).filter(User.email == email).first()
-        if existing_user :
-            raise HTTPException(status_code=400, detail="Неверный формат email или пароля.")
-
-        hashed_password = get_password_hash(password)
-        new_user = User(
-            id=str(uuid4()),
-            email=email,
-            password_hash=hashed_password,
-            last_login=None
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-
-        return {"status": "success", "data": {"id": new_user.id}}
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        logger.error(f"Ошибка при регистрации пользователя Directus: {e}")
-        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера.")
-
 @app.post("/api/v1/users/register", status_code=200)
 def register_user(email: str, password: str, db: Session = Depends(get_db)):
     try:
@@ -100,24 +79,46 @@ def register_user(email: str, password: str, db: Session = Depends(get_db)):
         if existing_user:
             raise HTTPException(status_code=400, detail="Email уже существует.")
 
+        response = requests.post(
+            f"{DIRECTUS_API_URL}/users/register",
+            json={"email": email, "password": password}
+        )
+
+        if response.status_code == 400:
+            raise HTTPException(status_code=400, detail="Неверный формат email или пароля.")
+        elif response.status_code == 500:
+            raise HTTPException(status_code=500, detail="Ошибка на стороне Directus.")
+        elif response.status_code != 201:
+            logger.error(f"Unexpected Directus response: {response.status_code}, {response.json()}")
+            raise HTTPException(status_code=500, detail="Ошибка регистрации в Directus.")
+
+
+        directus_data = response.json()
+        id_directus = directus_data.get("data", {}).get("id")
+        if not id_directus:
+            raise HTTPException(status_code=500, detail="Ошибка получения ID Directus.")
+
         hashed_password = get_password_hash(password)
         new_user = User(
             id=str(uuid4()),
             email=email,
             password_hash=hashed_password,
-            last_login=datetime.utcnow()
+            id_directus=id_directus,
+            last_login=None
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        token = create_access_token(data={"sub": new_user.email})
-        return {"token": token}
+        token = create_access_token(data={"sub": email})
+        return {"status": "success", "token": token}
+
     except HTTPException as http_exc:
         raise http_exc
     except Exception as e:
         logger.error(f"Ошибка при регистрации пользователя API: {e}")
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера.")
+
 
 @app.post("/api/v1/users/login", status_code=200)
 def login_user(login: str, password: str, db: Session = Depends(get_db)):
