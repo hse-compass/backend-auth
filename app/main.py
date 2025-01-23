@@ -24,7 +24,8 @@ DIRECTUS_API_URL = os.getenv("DIRECTUS_API_URL")
 DIRECTUS_ADMIN_TOKEN = os.getenv("DIRECTUS_ADMIN_TOKEN")
 
 Base = declarative_base()
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL,
+                       connect_args={'options': '-csearch_path=auth'})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -80,17 +81,18 @@ def register_user(email: str, password: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Email уже существует.")
 
         response = requests.post(
-            f"{DIRECTUS_API_URL}/users/register",
-            json={"email": email, "password": password}
+            f"{DIRECTUS_API_URL}/users",
+            headers={"Authorization": f"Bearer {DIRECTUS_ADMIN_TOKEN}"},
+            json={"email": email, "password": password, "role": "55a9bff6-4e25-44c2-ba96-12be86f79d31"}
         )
 
         if response.status_code == 400:
             raise HTTPException(status_code=400, detail="Неверный формат email или пароля.")
         elif response.status_code == 500:
             raise HTTPException(status_code=500, detail="Ошибка на стороне Directus.")
-        elif response.status_code != 201:
+        elif response.status_code != 200:
             logger.error(f"Unexpected Directus response: {response.status_code}, {response.json()}")
-            raise HTTPException(status_code=500, detail="Ошибка регистрации в Directus.")
+            raise HTTPException(status_code=response.status_cod, detail="Ошибка регистрации в Directus.")
 
 
         directus_data = response.json()
