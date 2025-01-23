@@ -92,7 +92,7 @@ def register_user(email: str, password: str, db: Session = Depends(get_db)):
             raise HTTPException(status_code=500, detail="Ошибка на стороне Directus.")
         elif response.status_code != 200:
             logger.error(f"Unexpected Directus response: {response.status_code}, {response.json()}")
-            raise HTTPException(status_code=response.status_cod, detail="Ошибка регистрации в Directus.")
+            raise HTTPException(status_code=500, detail="Ошибка регистрации в Directus.")
 
 
         directus_data = response.json()
