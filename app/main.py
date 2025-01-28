@@ -16,7 +16,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://thekevindit.zapto.org", "https://web.postman.co"],  
+    allow_origins=[
+        "http://thekevindit.zapto.org", 
+        "https://web.postman.co", 
+        "http://thekevindit.zapto.org:3000"
+    ],  
     allow_credentials=True,
     allow_methods=["*"],  
     allow_headers=["*"],  
