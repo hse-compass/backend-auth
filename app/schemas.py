@@ -7,7 +7,7 @@ class UserCreate(BaseModel):
     password: str
 
 class UserLogin(BaseModel):
-    login: EmailStr
+    email: EmailStr
     password: str
 
 class UserResponse(BaseModel):
@@ -15,4 +15,4 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

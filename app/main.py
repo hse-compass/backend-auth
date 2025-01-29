@@ -19,7 +19,10 @@ app.add_middleware(
     allow_origins=[
         "http://thekevindit.zapto.org", 
         "https://web.postman.co", 
-        "http://thekevindit.zapto.org:3000"
+        "http://thekevindit.zapto.org:3000",
+        "http://localhost:3000",
+        "http://localhost",
+        "http://127.0.0.1"
     ],  
     allow_credentials=True,
     allow_methods=["*"],  
