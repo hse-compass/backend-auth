@@ -16,3 +16,6 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TokenData(BaseModel):
+    token: str

@@ -7,9 +7,6 @@ WORKDIR /app
 # Копируем файлы проекта в контейнер
 COPY . /app/
 
-# Обновляем pip
-RUN pip install --upgrade pip
-
 # Устанавливаем зависимости из requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
