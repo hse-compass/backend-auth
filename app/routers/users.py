@@ -155,33 +155,4 @@ def get_me(request: Request, db: Session = Depends(get_db)):
         "id": user.id,
         "last_login": user.last_login,
     }
-    
 
-@router.post("/check_token")
-def check_token(token_data: TokenData, db: Session = Depends(get_db)):
-    """
-    Проверяет валидность токена и возвращает информацию о пользователе.
-    """
-    try:
-        payload = jwt.decode(token_data.token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if not email:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-        return {
-            "status": "success",
-            "data": {
-                "user": {
-                    "id": user.id,
-                    "directus_id": user.id_directus,
-                    "email": user.email,
-                    "role": user.role
-                }
-            }
-        }
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
