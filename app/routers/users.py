@@ -10,7 +10,7 @@ from jose import jwt
 
 from ..database import SessionLocal, Base
 from ..models import User
-from ..schemas import UserCreate, UserLogin
+from ..schemas import UserCreate, UserLogin, TokenData
 from ..security import verify_password, get_password_hash, create_access_token, create_refresh_token
 from ..config import DIRECTUS_API_URL, DIRECTUS_ADMIN_TOKEN, ALGORITHM, REFRESH_SECRET_KEY,SECRET_KEY
 from ..database import SessionLocal
@@ -155,3 +155,4 @@ def get_me(request: Request, db: Session = Depends(get_db)):
         "id": user.id,
         "last_login": user.last_login,
     }
+

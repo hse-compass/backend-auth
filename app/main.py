@@ -1,5 +1,5 @@
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -32,10 +32,21 @@ app.add_middleware(
 # Подключаем роутер, указываем префикс и тег (опционально)
 app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 
-@app.exception_handler(Exception)
-async def server_error_handler(request: Request, exc: Exception):
-    logger.error(f"Ошибка сервера: {exc}")
+@app.exception_handler(HTTPException)
+def custom_http_exception_handler(request, exc: HTTPException):
+    logger.error(f"HTTPException {exc.status_code}: {exc.detail}")
+
+    error_messages = {
+        400: "Некорректный запрос.",
+        401: "Неверный или просроченный токен.",
+        403: "У вас нет прав для доступа к этому ресурсу.",
+        404: "Запрашиваемый ресурс не найден.",
+        500: "Внутренняя ошибка сервера. Попробуйте позже."
+    }
+
+    message = error_messages.get(exc.status_code, "Неизвестная ошибка.")
+
     return JSONResponse(
-        status_code=500,
-        content={"status": "error", "message": "Внутренняя ошибка сервера."},
+        status_code=exc.status_code,
+        content={"status": "error", "message": message}
     )
