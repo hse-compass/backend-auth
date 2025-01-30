@@ -1,15 +1,17 @@
-from passlib.context import CryptContext
+import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta
-from .config import SECRET_KEY, ALGORITHM,REFRESH_SECRET_KEY
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+from .config import SECRET_KEY, ALGORITHM, REFRESH_SECRET_KEY
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    hashed_bytes = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    return hashed_bytes.decode("utf-8")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"),
+        hashed_password.encode("utf-8")
+    )
 
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     to_encode = data.copy()
