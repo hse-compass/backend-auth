@@ -14,21 +14,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://thekevindit.zapto.org", 
-        "https://web.postman.co", 
-        "http://thekevindit.zapto.org:3000",
-        "http://thekevindit.zapto.org:8055",
-        "http://localhost:3000",
-        "http://localhost",
-        "http://127.0.0.1"
-    ],  
+        "*"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  
-    allow_headers=["*"],  
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Подключаем роутер, указываем префикс и тег (опционально)
