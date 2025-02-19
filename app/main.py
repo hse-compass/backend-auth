@@ -23,6 +23,7 @@ app.add_middleware(
         'http://hse-compass.ru',
         'https://hse-compass.ru',
         "http://localhost:3000",
+        "https://localhost",
         "http://localhost",
         "http://127.0.0.1"
     ],
