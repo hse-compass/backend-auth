@@ -19,3 +19,8 @@ class UserResponse(BaseModel):
 
 class TokenData(BaseModel):
     token: str
+
+class PasswordChange(BaseModel):
+    old_password: str
+    new_password: str
+    secret: str

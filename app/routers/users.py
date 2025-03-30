@@ -10,9 +10,12 @@ from jose import jwt
 
 from ..database import SessionLocal, Base
 from ..models import User
-from ..schemas import UserCreate, UserLogin, TokenData
+from ..schemas import UserCreate, UserLogin, TokenData, PasswordChange, PasswordReset, PasswordResetConfirm
 from ..security import verify_password, get_password_hash, create_access_token, create_refresh_token
-from ..config import DIRECTUS_API_URL, DIRECTUS_ADMIN_TOKEN, ALGORITHM, REFRESH_SECRET_KEY, SECRET_KEY
+from ..config import (
+    DIRECTUS_API_URL, DIRECTUS_ADMIN_TOKEN, ALGORITHM, 
+    REFRESH_SECRET_KEY, SECRET_KEY,
+)
 from ..database import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -187,3 +190,56 @@ def get_me(request: Request, db: Session = Depends(get_db)):
         "id": user.id,
         "directus_id": user.id_directus,
     }
+
+
+@router.post("/change-password")
+def change_password(
+    password_data: PasswordChange,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # Проверяем secret
+    if password_data.secret != SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Неверный secret")
+
+    # Получаем пользователя из токена
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+
+    access_token = parts[1]
+    try:
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Token is invalid or expired")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Проверяем старый пароль
+    if not verify_password(password_data.old_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Неверный старый пароль")
+
+    # Обновляем пароль в Directus
+    response = requests.patch(
+        f"{DIRECTUS_API_URL}/users/{user.id_directus}",
+        headers={"Authorization": f"Bearer {DIRECTUS_ADMIN_TOKEN}"},
+        json={"password": password_data.new_password}
+    )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=500, detail="Ошибка обновления пароля в Directus")
+
+    # Обновляем пароль в нашей БД
+    user.password_hash = get_password_hash(password_data.new_password)
+    db.commit()
+
+    return {"status": "success", "message": "Пароль успешно изменен"}
