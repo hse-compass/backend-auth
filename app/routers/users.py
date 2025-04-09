@@ -10,7 +10,7 @@ from jose import jwt
 
 from ..database import SessionLocal, Base
 from ..models import User
-from ..schemas import UserCreate, UserLogin, TokenData, PasswordChange, PasswordReset, PasswordResetConfirm
+from ..schemas import UserCreate, UserLogin, PasswordChange
 from ..security import verify_password, get_password_hash, create_access_token, create_refresh_token
 from ..config import (
     DIRECTUS_API_URL, DIRECTUS_ADMIN_TOKEN, ALGORITHM, 
