@@ -2,6 +2,7 @@ import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from .config import ALLOWED_ORIGINS
 
 from app.database import Base, engine
 from app.routers import users
@@ -11,13 +12,12 @@ logger = logging.getLogger(__name__)
 
 # Создаем таблицы, если их нет
 Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
